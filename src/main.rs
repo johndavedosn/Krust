@@ -1,37 +1,24 @@
 #![no_std]
 #![no_main]
 
+use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
-use bootloader::{BootInfo, entry_point};
-use my_kernel::{println, memory, allocator};
+use my_kernel::task::{executor::Executor, Task};
+use my_kernel::{allocator, memory, println};
 use x86_64::VirtAddr;
-use my_kernel::task::{Task,  executor::Executor};
 
 entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
-    use my_kernel::BOOT_INFO;
-    use spin::Mutex;
-    use my_kernel::Memory;
     use my_kernel::task::keyboard;
-
 
     println!("Hello World{}", "!");
     my_kernel::init();
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe { memory::BootInfoFrameAllocator::init(&boot_info.memory_map) };
-    let mut boot_info= match &BOOT_INFO {
-        Some(mem) => mem,
-        None =>& Mutex::new(
-            Memory {
-                mapper:  Some(&mapper),
-                frame_allocator:  Some(frame_allocator)
-            }
-        )
-    };
-    boot_info.lock().mapper = Some(&mapper);
-    allocator::init_heap(&mut mapper, &mut frame_allocator)
-        .expect("heap initialization failed");
+    let mut frame_allocator =
+        unsafe { memory::BootInfoFrameAllocator::init(&boot_info.memory_map) };
+
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
     // Put kernel code here
 
     let mut executor = Executor::new();

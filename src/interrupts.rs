@@ -1,15 +1,15 @@
 extern crate alloc;
 use crate::hlt_loop;
+use crate::io;
+use crate::io::Stdin;
 use crate::{gdt, println};
+use alloc::vec::Vec;
 use lazy_static::lazy_static;
 use pic8259::ChainedPics;
 use spin;
 use x86_64::structures::idt::PageFaultErrorCode;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use alloc::{vec::Vec};
-use crate::io;
-use crate::io::Stdin;
-    pub const PIC_1_OFFSET: u8 = 32;
+pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 pub const SYSCALL_INTERRUPT: u8 = 0x80;
 
@@ -24,13 +24,10 @@ lazy_static! {
                 .set_handler_fn(double_fault_handler)
                 .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
         }
-        idt[InterruptIndex::Timer.as_usize()]
-        .set_handler_fn(timer_interrupt_handler);
-        idt[InterruptIndex::Keyboard.as_usize()]
-        .set_handler_fn(keyboard_interrupt_handler);
+        idt[InterruptIndex::Timer.as_usize()].set_handler_fn(timer_interrupt_handler);
+        idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
         idt.page_fault.set_handler_fn(page_fault_handler);
-        idt[SYSCALL_INTERRUPT as usize]
-        .set_handler_fn(syscall_handler);
+        idt[SYSCALL_INTERRUPT as usize].set_handler_fn(syscall_handler);
         idt
     };
 }
@@ -52,14 +49,13 @@ extern "x86-interrupt" fn double_fault_handler(
 
 #[test_case]
 fn test_breakpoint_exception() {
-
     x86_64::instructions::interrupts::int3();
 }
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum InterruptIndex {
     Timer = PIC_1_OFFSET,
-    Keyboard, 
+    Keyboard,
 }
 impl InterruptIndex {
     fn as_u8(self) -> u8 {
@@ -70,9 +66,7 @@ impl InterruptIndex {
         usize::from(self.as_u8())
     }
 }
-extern "x86-interrupt" fn timer_interrupt_handler(
-    _stack_frame: InterruptStackFrame)
-{
+extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
     unsafe {
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
@@ -81,11 +75,9 @@ extern "x86-interrupt" fn timer_interrupt_handler(
 use spin::Mutex;
 
 lazy_static! {
-    static ref STDIN:  Mutex<Stdin> = Mutex::new(io::stdin_new(Vec::new()));
+    static ref STDIN: Mutex<Stdin> = Mutex::new(io::stdin_new(Vec::new()));
 }
-extern "x86-interrupt" fn keyboard_interrupt_handler(
-    _stack_frame: InterruptStackFrame
-) {
+extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
     use x86_64::instructions::port::Port;
 
     let mut port = Port::new(0x60);
@@ -111,21 +103,21 @@ extern "x86-interrupt" fn page_fault_handler(
 }
 #[derive(Debug)]
 pub struct State {
-    rax:   usize,
-    rcx:  usize,
-    rdx:  usize,
-    rbx: usize
+    rax: usize,
+    rcx: usize,
+    rdx: usize,
+    rbx: usize,
 }
 impl State {
     pub fn new() -> Self {
         State {
-            rax:  0,
-            rcx:  0,
-            rdx:  0,
-            rbx: 0
+            rax: 0,
+            rcx: 0,
+            rdx: 0,
+            rbx: 0,
         }
     }
-    pub fn update_rax(&mut self){
+    pub fn update_rax(&mut self) {
         let rax: usize;
         unsafe { core::arch::asm!("mov {}, rax", out(reg) rax) }
         self.rax = rax;
@@ -147,30 +139,21 @@ impl State {
         self.rbx = rbx;
     }
 }
-extern  "x86-interrupt" fn syscall_handler(
-    stack_frame: InterruptStackFrame
-)
-{
+extern "x86-interrupt" fn syscall_handler(stack_frame: InterruptStackFrame) {
     use crate::memory;
+    use crate::BOOT_INFO;
     use x86_64::structures::paging::Page;
     use x86_64::VirtAddr;
-    use crate::BOOT_INFO;
     let mut regs = State::new();
     match regs.rax {
         1 => {
-            regs.update_rax();
-            regs.update_rcx();
-            regs.update_rdx();
-            regs.update_rbx();
-            let page = Page::containing_address(VirtAddr::new(regs.rdx as u64));
-            let mapper = BOOT_INFO.unwrap().lock();
+            todo!();
         }
         _ => {
             unimplemented!()
         }
     }
     unsafe {
-        PICS.lock()
-            .notify_end_of_interrupt(SYSCALL_INTERRUPT);
+        PICS.lock().notify_end_of_interrupt(SYSCALL_INTERRUPT);
     }
 }
