@@ -1,7 +1,9 @@
 # Krust
 An x86_64 simple kernel made with Rust and bootimage.
 
-
+#  Discontinuation notice.
+As Krust is currently awfully outdated and actually broken,   I have decided to leave the project 
+and leave it as a learning codebase more so than an actually functioning kernel.
 # Recommendation
 Compile with a nightly toolchain in order to give access for experimental features, The kernel might not compile without this.
 
