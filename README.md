@@ -4,6 +4,8 @@ An x86_64 simple kernel made with Rust and bootimage.
 #  Discontinuation notice.
 As Krust is currently awfully outdated and actually broken,   I have decided to leave the project 
 and leave it as a learning codebase more so than an actually functioning kernel.
+## Updated.
+I have fixed a lot of issues within the kernel and managed to upgrade ``x86_x64`` to the newest version (it's the most important crate in my eyes) fixing all the issues that came with,   though it seems there is an issue still with the target that needs fixing so yeah....still can't compile.
 # Recommendation
 Compile with a nightly toolchain in order to give access for experimental features, The kernel might not compile without this.
 
